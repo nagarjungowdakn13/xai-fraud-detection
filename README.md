@@ -68,3 +68,11 @@ A microservices-based fraud detection platform using Flask, React, Kafka, Flink,
 - **Real-time Fraud Detection**: Analyzes transactions via Kafka stream.
 - **Graph Analysis**: Visualizes relationships using Neo4j.
 - **Dashboard**: Live alerts and statistics.
+- 
+<img width="1914" height="926" alt="Screenshot 2025-11-19 220805" src="https://github.com/user-attachments/assets/26f8f5e6-5f40-4ddc-8fcb-76d778145b26" />
+
+<img width="1905" height="925" alt="Screenshot 2025-11-19 215313" src="https://github.com/user-attachments/assets/6da3f28e-0974-439e-b4fd-6e89bc4d5975" />
+
+<img width="1907" height="925" alt="Screenshot 2025-11-19 220736" src="https://github.com/user-attachments/assets/babf4fa7-716b-433c-b9d2-031d96e2362b" />
+
+<img width="1905" height="925" alt="Screenshot 2025-11-19 220751" src="https://github.com/user-attachments/assets/94b19a56-71ac-45cb-b35e-03d62030485d" />
