@@ -1,0 +1,11 @@
+Flask==2.1.0
+Flask-CORS==3.0.10
+py2neo==2021.2.4
+kafka-python==2.0.2
+
+# Pin Werkzeug to <3 for Flask 2.1 compatibility
+Werkzeug<3.0.0
+Flask==2.1.0
+Flask-CORS==3.0.10
+py2neo==2021.2.4
+kafka-python==2.0.2

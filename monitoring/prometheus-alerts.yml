@@ -1,0 +1,47 @@
+groups:
+  - name: fraud_detection
+    rules:
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value }} per second"
+
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is {{ $value }} seconds"
+
+      - alert: KafkaLag
+        expr: avg(kafka_consumer_lag) > 1000
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Kafka consumer lag is high"
+          description: "Average consumer lag is {{ $value }} messages"
+
+      - alert: ModelPerformanceDegradation
+        expr: fraud_model_precision < 0.8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Model performance degraded"
+          description: "Model precision has dropped to {{ $value }}"
+
+      - alert: HighFraudRate
+        expr: rate(fraud_transactions_total[1h]) > 10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High fraud rate detected"
+          description: "Fraud rate is {{ $value }} transactions per hour"
