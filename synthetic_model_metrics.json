@@ -1,0 +1,65 @@
+{
+  "logreg": {
+    "accuracy": 0.6819,
+    "balanced_accuracy": 0.52094,
+    "auc_roc": 0.52257,
+    "auprc": 0.01731,
+    "f1": 0.03342,
+    "latency_ms_total": 7.1,
+    "latency_ms_per_tx": 0.00071
+  },
+  "rf": {
+    "accuracy": 0.9845,
+    "balanced_accuracy": 0.5,
+    "auc_roc": 0.48085,
+    "auprc": 0.01596,
+    "f1": 0.0,
+    "latency_ms_total": 95.403,
+    "latency_ms_per_tx": 0.00954
+  },
+  "gb": {
+    "accuracy": 0.9841,
+    "balanced_accuracy": 0.4998,
+    "auc_roc": 0.5061,
+    "auprc": 0.01673,
+    "f1": 0.0,
+    "latency_ms_total": 9.966,
+    "latency_ms_per_tx": 0.001
+  },
+  "ensemble_timing": {
+    "logreg": 7.646,
+    "rf": 98.829,
+    "gb": 10.377
+  },
+  "ensemble": {
+    "accuracy": 0.9843,
+    "balanced_accuracy": 0.4999,
+    "auc_roc": 0.51756,
+    "auprc": 0.01725,
+    "f1": 0.0,
+    "latency_ms_total": 116.852
+  },
+  "ablations": {
+    "no_logreg": {
+      "accuracy": 0.9843,
+      "balanced_accuracy": 0.4999,
+      "auc_roc": 0.49055,
+      "auprc": 0.01606,
+      "f1": 0.0
+    },
+    "no_rf": {
+      "accuracy": 0.9801,
+      "balanced_accuracy": 0.50094,
+      "auc_roc": 0.52201,
+      "auprc": 0.01756,
+      "f1": 0.00995
+    },
+    "no_gb": {
+      "accuracy": 0.9798,
+      "balanced_accuracy": 0.50079,
+      "auc_roc": 0.51804,
+      "auprc": 0.01726,
+      "f1": 0.0098
+    }
+  }
+}

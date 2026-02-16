@@ -1,0 +1,43 @@
+# Dataset manifest template
+# Place your real datasets under data/raw/<dataset_name>/ with files referenced here.
+
+dataset_name: sample_transactions
+version: 0.1.0
+schema:
+  required_columns:
+    - timestamp
+    - account_id
+    - counterparty_id
+    - device_id
+    - ip_address
+    - merchant_id
+    - amount
+    - currency
+    - channel
+    - label
+  dtypes:
+    timestamp: datetime
+    account_id: string
+    counterparty_id: string
+    device_id: string
+    ip_address: string
+    merchant_id: string
+    amount: float
+    currency: category
+    channel: category
+    label: int
+paths:
+  train: data/raw/sample_transactions/train.csv
+  valid: data/raw/sample_transactions/valid.csv
+  test: data/raw/sample_transactions/test.csv
+notes: |
+  Replace with your real dataset paths and adjust schema as needed.
+
+
+# Auto-generated manifest for synthetic_transactions
+dataset_name: synthetic_transactions
+version: 0.1.0
+paths:
+  train: data/raw/synthetic_transactions/train.csv
+  valid: data/raw/synthetic_transactions/valid.csv
+  test:  data/raw/synthetic_transactions/test.csv

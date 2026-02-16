@@ -12,11 +12,11 @@ def create_app():
 
     # Optional blueprints: import and register if present
     blueprints = {
-        'backend.app.auth': ('auth_bp', '/auth'),
-        'backend.app.fraud': ('fraud_bp', '/fraud'),
-        'backend.app.models': ('models_bp', '/models'),
-        'backend.app.recommendations': ('recommendations_bp', '/recommendations'),
-        'backend.app.graph': ('graph_bp', '/graph'),
+        'app.auth': ('auth_bp', '/auth'),
+        'app.fraud': ('fraud_bp', '/fraud'),
+        'app.models': ('models_bp', '/models'),
+        'app.recommendations': ('recommendations_bp', '/recommendations'),
+        'app.graph': ('graph_bp', '/graph'),
     }
 
     for module_name, (bp_name, prefix) in blueprints.items():
@@ -24,8 +24,9 @@ def create_app():
             module = importlib.import_module(module_name)
             bp = getattr(module, bp_name)
             app.register_blueprint(bp, url_prefix=prefix)
-        except Exception:
+        except Exception as e:
             # Blueprint missing or failed to import; skip gracefully
+            print(f"Error loading blueprint {module_name}: {e}")
             logger.debug(f"Skipping blueprint {module_name}.{bp_name}")
 
     return app

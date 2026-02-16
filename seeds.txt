@@ -1,0 +1,5 @@
+# Deterministic seeds for reproducibility
+numpy=42
+python_random=42
+torch=42
+torch_cuda_deterministic=true

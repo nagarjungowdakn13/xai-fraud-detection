@@ -5,6 +5,7 @@ import {
   Col,
   Descriptions,
   Modal,
+  Progress,
   Row,
   Statistic,
   Table,
@@ -27,6 +28,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [selectedTx, setSelectedTx] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [metrics, setMetrics] = useState(null);
 
   const fetchTransactions = () => {
     setLoading(true);
@@ -44,8 +46,55 @@ export default function Home() {
 
   useEffect(() => {
     fetchTransactions();
+    let active = true;
+    const fetchMetrics = () => {
+      fetch("/metrics", { cache: "no-store" })
+        .then((r) => r.json())
+        .then((m) => {
+          if (active) setMetrics(m);
+        })
+        .catch(() => {});
+    };
+    fetchMetrics();
+    const interval = setInterval(fetchMetrics, 5000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
   }, []);
 
+  // Subscribe to the same live stream as the dashboard so that
+  // new transactions appear in the overview table in real time.
+  useEffect(() => {
+    const GATEWAY = import.meta.env.VITE_GATEWAY_URL || "http://localhost:5000";
+    const eventSource = new EventSource(`${GATEWAY}/fraud/stream`);
+
+    eventSource.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      const incoming = {
+        id: data.id,
+        amount: data.amount,
+        score: Number(data.risk_score ?? data.prediction_score ?? 0),
+        decision: data.decision,
+        risk_category: data.risk_category,
+      };
+
+      setTransactions((prev) => {
+        const combined = [incoming, ...prev];
+        const seen = new Set();
+        const unique = [];
+        for (const tx of combined) {
+          if (!seen.has(tx.id)) {
+            seen.add(tx.id);
+            unique.push(tx);
+          }
+        }
+        return unique.slice(0, 50);
+      });
+    };
+
+    return () => eventSource.close();
+  }, []);
   const showModal = (record) => {
     setSelectedTx(record);
     setIsModalVisible(true);
@@ -101,6 +150,31 @@ export default function Home() {
       sorter: (a, b) => a.score - b.score,
     },
     {
+      title: "Decision",
+      dataIndex: "decision",
+      key: "decision",
+      render: (decision) => {
+        if (!decision) return null;
+        let color = "default";
+        let label = decision;
+        if (decision === "DECLINE") {
+          color = "red";
+          label = "Blocked";
+        } else if (decision === "REVIEW") {
+          color = "orange";
+          label = "Review";
+        } else if (decision === "APPROVE") {
+          color = "green";
+          label = "Approved";
+        }
+        return (
+          <Tag color={color} style={{ width: 100, textAlign: "center" }}>
+            {label}
+          </Tag>
+        );
+      },
+    },
+    {
       title: "Action",
       key: "action",
       render: (_, record) => (
@@ -122,6 +196,8 @@ export default function Home() {
   // Calculate stats
   const totalVolume = transactions.reduce((acc, curr) => acc + curr.amount, 0);
   const highRiskCount = transactions.filter((t) => t.score > 0.8).length;
+  const dist = metrics?.distribution || { high: 0, medium: 0, low: 0 };
+  const totalEvents = metrics?.total_events || 0;
 
   return (
     <div style={{ padding: "24px" }}>
@@ -189,6 +265,58 @@ export default function Home() {
         </Col>
       </Row>
 
+      {metrics && metrics.distribution && (
+        <Row gutter={16} style={{ marginBottom: 24 }}>
+          <Col span={12}>
+            <Card bordered={false} title="Streaming Metrics" size="small">
+              <Descriptions size="small" column={1} bordered>
+                <Descriptions.Item label="Events Buffered">
+                  {totalEvents}
+                </Descriptions.Item>
+                <Descriptions.Item label="Avg Prediction Score">
+                  {metrics.avg_prediction_score}
+                </Descriptions.Item>
+                <Descriptions.Item label="High / Medium / Low">
+                  {dist.high} / {dist.medium} / {dist.low}
+                </Descriptions.Item>
+              </Descriptions>
+            </Card>
+          </Col>
+          <Col span={12}>
+            <Card bordered={false} title="Risk Distribution" size="small">
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: 12 }}
+              >
+                <div>
+                  <span style={{ fontSize: 12 }}>High Risk</span>
+                  <Progress
+                    percent={totalEvents ? (dist.high / totalEvents) * 100 : 0}
+                    status="exception"
+                    strokeColor="#cf1322"
+                  />
+                </div>
+                <div>
+                  <span style={{ fontSize: 12 }}>Medium Risk</span>
+                  <Progress
+                    percent={
+                      totalEvents ? (dist.medium / totalEvents) * 100 : 0
+                    }
+                    strokeColor="#faad14"
+                  />
+                </div>
+                <div>
+                  <span style={{ fontSize: 12 }}>Low Risk</span>
+                  <Progress
+                    percent={totalEvents ? (dist.low / totalEvents) * 100 : 0}
+                    strokeColor="#52c41a"
+                  />
+                </div>
+              </div>
+            </Card>
+          </Col>
+        </Row>
+      )}
+
       <Card bordered={false} style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
         <Table
           dataSource={transactions}
@@ -231,15 +359,15 @@ export default function Home() {
                   selectedTx.score > 0.8
                     ? "error"
                     : selectedTx.score > 0.4
-                    ? "warning"
-                    : "success"
+                      ? "warning"
+                      : "success"
                 }
                 text={`${selectedTx.score.toFixed(4)} (${
                   selectedTx.score > 0.8
                     ? "High"
                     : selectedTx.score > 0.4
-                    ? "Medium"
-                    : "Low"
+                      ? "Medium"
+                      : "Low"
                 })`}
               />
             </Descriptions.Item>

@@ -1,4 +1,15 @@
-import { Card, Col, Row, Space, Statistic, Table, Tag, Typography } from "antd";
+import {
+  Card,
+  Col,
+  Descriptions,
+  Modal,
+  Row,
+  Space,
+  Statistic,
+  Table,
+  Tag,
+  Typography,
+} from "antd";
 import {
   Activity,
   AlertOctagon,
@@ -20,9 +31,56 @@ const Dashboard = () => {
     avgScore: 0,
   });
 
+  const [selectedTx, setSelectedTx] = useState(null);
+  const [explanation, setExplanation] = useState(null);
+  const [explLoading, setExplLoading] = useState(false);
+  const [explVisible, setExplVisible] = useState(false);
+
   useEffect(() => {
-    // Fetch real-time data
-    const eventSource = new EventSource("/fraud/stream");
+    // Fetch real-time data from gateway (avoid dev server origin)
+    const GATEWAY = import.meta.env.VITE_GATEWAY_URL || "http://localhost:5000";
+
+    let cancelled = false;
+
+    // Seed the dashboard with recent events so history is preserved
+    // when navigating between pages in the UI.
+    fetch(`${GATEWAY}/events/recent`)
+      .then((r) => r.json())
+      .then((events) => {
+        if (cancelled || !Array.isArray(events)) return;
+
+        const sorted = [...events].sort(
+          (a, b) => (a.time || 0) - (b.time || 0),
+        );
+
+        const withDisplayTime = sorted.map((e) => ({
+          ...e,
+          time: e.time
+            ? new Date(e.time * 1000).toLocaleTimeString()
+            : new Date().toLocaleTimeString(),
+        }));
+
+        // Use last 20 points for chart
+        setRealtimeData(withDisplayTime.slice(-20));
+        // Most recent first for alerts table
+        const reversed = [...withDisplayTime].reverse();
+        setAlerts(reversed.slice(0, 10));
+
+        // Initialise stats from this history so counts don't reset
+        if (withDisplayTime.length) {
+          const total = withDisplayTime.length;
+          const highRisk = withDisplayTime.filter(
+            (e) => e.risk_score > 0.8,
+          ).length;
+          const avgScore =
+            withDisplayTime.reduce((acc, e) => acc + (e.risk_score || 0), 0) /
+            total;
+          setStats({ total, highRisk, avgScore });
+        }
+      })
+      .catch(() => {});
+
+    const eventSource = new EventSource(`${GATEWAY}/fraud/stream`);
     eventSource.onmessage = (event) => {
       const data = JSON.parse(event.data);
       // Add timestamp for chart
@@ -47,7 +105,10 @@ const Dashboard = () => {
       }));
     };
 
-    return () => eventSource.close();
+    return () => {
+      cancelled = true;
+      eventSource.close();
+    };
   }, []);
 
   const columns = [
@@ -97,6 +158,22 @@ const Dashboard = () => {
       },
     },
   ];
+
+  const handleRowClick = (record) => {
+    setSelectedTx(record);
+    setExplVisible(true);
+    setExplLoading(true);
+    fetch(`/events/explain/${record.id}`)
+      .then((r) => r.json())
+      .then((data) => {
+        setExplanation(data);
+        setExplLoading(false);
+      })
+      .catch(() => {
+        setExplanation({ error: "Failed to load explanation" });
+        setExplLoading(false);
+      });
+  };
 
   return (
     <div style={{ padding: "24px" }}>
@@ -205,6 +282,10 @@ const Dashboard = () => {
               dataSource={alerts}
               columns={columns}
               rowKey="id"
+              onRow={(record) => ({
+                onClick: () => handleRowClick(record),
+                style: { cursor: "pointer" },
+              })}
               pagination={false}
               size="small"
               scroll={{ y: 600 }}
@@ -212,6 +293,110 @@ const Dashboard = () => {
           </Card>
         </Col>
       </Row>
+
+      <Modal
+        title="Transaction Explanation"
+        open={explVisible}
+        onCancel={() => setExplVisible(false)}
+        footer={null}
+        width={720}
+      >
+        {explLoading && <p>Loading explanation...</p>}
+        {!explLoading && selectedTx && (
+          <Space direction="vertical" style={{ width: "100%" }} size="large">
+            <Descriptions bordered column={2} size="small">
+              <Descriptions.Item label="Transaction ID">
+                {selectedTx.id}
+              </Descriptions.Item>
+              <Descriptions.Item label="Amount">
+                ₹{selectedTx.amount}
+              </Descriptions.Item>
+              <Descriptions.Item label="Risk Score">
+                {selectedTx.risk_score?.toFixed(4)}
+              </Descriptions.Item>
+              <Descriptions.Item label="Recommendation">
+                {selectedTx.recommendation}
+              </Descriptions.Item>
+            </Descriptions>
+
+            {Array.isArray(selectedTx.rules) && selectedTx.rules.length > 0 && (
+              <div>
+                <Title level={5} style={{ marginTop: 16 }}>
+                  Decision Reasons
+                </Title>
+                {selectedTx.rules.map((r, idx) => (
+                  <div key={idx} style={{ fontSize: 13 }}>
+                    • {r}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {explanation &&
+              explanation.explanation &&
+              explanation.explanation.summary &&
+              explanation.explanation.summary.human_readable && (
+                <div>
+                  <Title level={5} style={{ marginTop: 16 }}>
+                    Plain-language explanation
+                  </Title>
+                  <div style={{ fontSize: 13 }}>
+                    {explanation.explanation.summary.human_readable}
+                  </div>
+                </div>
+              )}
+
+            {explanation &&
+              explanation.explanation &&
+              explanation.explanation.feature_attributions && (
+                <div>
+                  <Title level={5} style={{ marginTop: 16 }}>
+                    Feature contributions (technical view)
+                  </Title>
+                  {Object.entries(explanation.explanation.feature_attributions)
+                    .sort(([, a], [, b]) => Math.abs(b) - Math.abs(a))
+                    .slice(0, 5)
+                    .map(([name, value]) => {
+                      const info =
+                        explanation.explanation.feature_info &&
+                        explanation.explanation.feature_info[name];
+                      const label = info?.name || name;
+                      const direction =
+                        value > 0 ? "↑ increases risk" : "↓ reduces risk";
+                      return (
+                        <div
+                          key={name}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            fontSize: 13,
+                            gap: 8,
+                          }}
+                        >
+                          <span>
+                            <strong>{label}</strong>
+                            {info?.description && (
+                              <span style={{ marginLeft: 4, opacity: 0.8 }}>
+                                – {info.description}
+                              </span>
+                            )}
+                          </span>
+                          <span>
+                            {Number(value).toFixed(4)} ({direction})
+                          </span>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+
+            {explanation && explanation.error && (
+              <Tag color="red">{explanation.error}</Tag>
+            )}
+          </Space>
+        )}
+      </Modal>
     </div>
   );
 };

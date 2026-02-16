@@ -1,0 +1,3 @@
+{'split': 'train', 'transactions': 80000, 'fraud_count': 1120, 'fraud_rate_pct': 1.4}
+{'split': 'valid', 'transactions': 10000, 'fraud_count': 156, 'fraud_rate_pct': 1.56}
+{'split': 'test', 'transactions': 10000, 'fraud_count': 155, 'fraud_rate_pct': 1.55}

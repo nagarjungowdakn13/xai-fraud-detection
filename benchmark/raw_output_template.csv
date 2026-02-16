@@ -1,0 +1,3 @@
+y_true,y_prob
+# Populate this file with actual model outputs for a single validation fold.
+# Remove this comment line when using in evaluation.

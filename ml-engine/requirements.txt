@@ -3,3 +3,7 @@ numpy
 scikit-learn
 kafka-python
 tensorflow-cpu
+torch
+torch-geometric
+matplotlib
+seaborn

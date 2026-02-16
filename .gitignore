@@ -1,3 +1,6 @@
+# Large raw datasets (keep local only; not pushed to GitHub)
+data/raw/bank_production/
+data/raw/ieee_cis/
 # Python
 __pycache__/
 *.pyc

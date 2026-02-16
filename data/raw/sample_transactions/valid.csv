@@ -1,0 +1,3 @@
+timestamp,account_id,counterparty_id,device_id,ip_address,merchant_id,amount,currency,channel,label
+2025-01-02T11:00:00Z,A5,B6,D5,10.0.0.5,M1,18.00,USD,web,0
+2025-01-02T11:05:00Z,A6,B7,D6,10.0.0.6,M3,450.00,USD,mobile,1
